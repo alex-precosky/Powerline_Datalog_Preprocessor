@@ -49,7 +49,12 @@ Calls the callback that gets a line of telemetry and processes it in an output l
 python Process_Powerline_File.py inputdata.dat outputfile.dat
 ```
 
-# Test Plan
+# Testing
+
+From the project directory, run:
+```
+python -m unittest discover pyPowerLine/test
+```
 
 The dataloader will be tested to 
 
