@@ -27,11 +27,34 @@ Timestamp T is an ISO 8601 formatted timestamp
 * Python 3.6+
 
 # Design
+
+## DatalogLoader
 An abstract class DatalogLoader provides a .get() method that will return one line of telemetry.  DatalogFileLoader will be implemented to solve the problem, and DatalogMemoryLoader will be used for testing.
+
+This architecture lets us handle telemetry streams that are possibly too big to fit in memory, or that are streaming, i.e. streamed one measurement at a time over a connection of some sort.
+
 ![DatalogLoader](doc/DataLogClasses.png)
 
+* get():
+Returns one line of telemetry as a string.  If this won't be possible, i.e. there are no more lines in an input file or a socket is closed, return None.
 
+## DataProcessor
+
+* run():
+Calls the callback that gets a line of telemetry and processes it in an output line, which is then sent to the write function callback.  Continues until get() has a problem.
 
 # Running
 
-# Testing
+```shell
+python Process_Powerline_File.py inputdata.dat outputfile.dat
+```
+
+# Test Plan
+
+The dataloader will be tested to 
+
+## PowerlineDataProcessor
+
+The PowerlineDataProcessor will use object mocking to make sure it calls an input function and an output function.
+
+Parsing will be tested with unittests
