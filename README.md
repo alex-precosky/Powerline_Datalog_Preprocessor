@@ -15,7 +15,7 @@ Input lines appear as:
   
 Output lines will appear as:
 ```
-<time>, <kW>, <V>, <I>, <kW-avg>, <V-avg>, <I-avg>
+T, kW, V, I, kW-avg, V-avg, I-avg
 ```
 
 Where the first four fields are the input values for each timestamp and the avg fields are the 5-second sliding window average of the corresponding input field, output only when there are no gaps in the data for the previous five seconds.
@@ -34,39 +34,104 @@ That's it!  No libraries that don't come with stock Python 3.6 are needed.
 
 # Running
 
+An input data file inputdata.dat is provided.  This was originally named telemetry[1].dat but was renamed since square brackets can be tricky to deal with in a command shell.
+
 ```shell
-python Process_Powerline_File.py inputdata.dat outputfile.dat
+python ProcessPowerlineFile.py inputdata.dat outputfile.dat
 ```
 
-# Testing
+The file will be processed and the output will appear in outputfile.dat.
 
-From the project directory, run:
+# Running Tests
+
+To run the unit tests, from the project directory, run:
 ```
 python -m unittest discover pyPowerLine/test
 ```
 
-The dataloader will be tested to 
+# Design
+
+The overall dataflow is based around three abstract classes:
+* **DatalogLoader**
+* **DataProcessor**
+* **DatalogWriter**
+
+Each class is purely abstract, i.e. not instantiatable. They serve as abstraction of input and outputs, as well as the processing algorithm performed between input and output.
+
+
+## DatalogLoader
+An abstract class DatalogLoader provides a .get() method that will return one line of telemetry. 
+
+This architecture lets us handle telemetry streams that are possibly too big to fit in memory, or that are streaming, i.e. streamed one measurement at a time over a connection of some sort.
+
+Here is an inheritance diagram for DatalogLoader. Note that in this implementation, only DatalogFileLoader is implemented.
+![DatalogLoader](doc/DataLogLoader.png)
+
+### Methods:
+* get():
+Returns one line of telemetry as a string.  The string is not newline terminated.  If this won't be possible, i.e. there are no more lines in an input file or a socket is closed, return **None**.
+
+* close():
+Closes the underlying data source, i.e. the file or socket.
+
+## DatalogWriter
+An abstract class DatalogWriter provides a .put() method that will write one line of telemetry to an underlying destination.  
+
+Like **DatalogLoader**, this will let us handle different kinds of destinations.
+
+Here is an inheritance diagram for DatalogWriter. Note that in this implementation, only DatalogFileWriter is implemented.
+![DatalogWriter](doc/DataLogWriter.png)
+
+* put(str):
+Writes one line of telemetry as a string.
+
+* close():
+Closes the underling destination, i.e. the file or socket.
+
+## DataProcessor
+
+This is an abstract base class that uses dependency injection to call the get() and put() methods of a DatalogLoader and DatalogWriter object respectively.
+
+The dataflow works like this:
+![DataProcessorFlow](doc/DataProcessorDataflow.png)
+
+And the interitance as implemented is:
+![DataProcessorInheritance](doc/DataProcessorInheritance.png)
+
+
+
+* \_\_init\_\_(function get_function, function put_function): Instantiates the class with pointers to functions that should be implemented by a **DatalogLoader** and a **DatalogWriter**
+
+* run():
+Calls the callback that gets a line of telemetry and processes it in an output line, which is then sent to the write function callback.  Continues until get() has a problem.
+
+* str, List[str] process_line(str):
+Called by run() each time a telemetry line is read. Returns the processed telemetry line, and a list of anomaly strings.
+
+### PowerlineDataProcessor
+
+This subclass keeps a record of the moving average window worth of samples in a buffer.  It checks the timestamps of old values and discards them if they are too old, keeping the memory footprint low.
+
+Class **TelemetryRecord** is private to this class and encapsulates an input data record. 
+
+There is also an inheritance tree from abstract class **AnomalyChecker**, which has several child classes that each override a *check_telemetry_record* method.  The **PowerlineDataProcessor** maintains a list of anomaly checkers, and passes **TelemetryRecord** objects to each one to receive any anomaly messages, or None if there is no anomaly detected by the checker.  Anomalies apply to either a single telemetry measurement, or across several (in the case of the time gaps).
+
+Here are the anomaly checkers that were implemented:
+![AnomalyCheckerInheritance](doc/AnomalyChecker.png)
+
+
+# Test Plan
+
+## Assumptions
+- Timestamped telemetry is always in chronological order. I.e. whatever transport brings in the data is assumed to serve to guarantee in-order delivery
+- Input data is properly formed. I.e. it will never fail to be parsed correctly according to its schema
+
+Individual classes will be unit tested to assume their correct output.  
+
+Object mocking will be used with the DataProcessor class to ensure it calls the correct methods that have been injected into it.
 
 ## PowerlineDataProcessor
 
 The PowerlineDataProcessor will use object mocking to make sure it calls an input function and an output function.
 
 Parsing will be tested with unittests
-
-
-# Design
-
-## DatalogLoader
-An abstract class DatalogLoader provides a .get() method that will return one line of telemetry.  DatalogFileLoader will be implemented to solve the problem, and DatalogMemoryLoader will be used for testing.
-
-This architecture lets us handle telemetry streams that are possibly too big to fit in memory, or that are streaming, i.e. streamed one measurement at a time over a connection of some sort.
-
-![DatalogLoader](doc/DataLogClasses.png)
-
-* get():
-Returns one line of telemetry as a string.  If this won't be possible, i.e. there are no more lines in an input file or a socket is closed, return None.
-
-## DataProcessor
-
-* run():
-Calls the callback that gets a line of telemetry and processes it in an output line, which is then sent to the write function callback.  Continues until get() has a problem.

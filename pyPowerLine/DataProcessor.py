@@ -10,7 +10,7 @@ class DataProcessor(ABC):
 
     @abstractmethod
     def process_line(self, telemetry_line):
-        """Returns a line of processed telemetry and a list of Anomalies"""
+        """Returns a line of processed telemetry and a list of anomaly messages"""
         pass
 
     def run(self):
