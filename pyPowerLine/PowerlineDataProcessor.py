@@ -92,9 +92,8 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         if delta.seconds < 5:
             output_mva = False
 
-
         if output_mva is True:
-            transformed_telemetry_line = f'{telemetry_line}, {kW_avg}, {V_avg}, {I_avg}'
+            transformed_telemetry_line = f'{telemetry_line}, {kW_avg:.3f}, {V_avg:.3f}, {I_avg:.3f}'
         else:
             transformed_telemetry_line = f'{telemetry_line}, , ,'
 
