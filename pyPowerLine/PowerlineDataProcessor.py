@@ -1,81 +1,11 @@
 from pyPowerLine import DataProcessor
 from pyPowerLine.TelemetryRecord import TelemetryRecord
-import datetime
 from datetime import timedelta
-from abc import ABC, abstractmethod
+
+from pyPowerLine.Anomaly import *
 
 class PowerlineDataProcessor(DataProcessor.DataProcessor):
 
-    class SingleValueAnomalyChecker(ABC):
-        def __init__(self):
-            pass
-
-        @abstractmethod
-        # Returns None for no anomaly, and a message if there is one
-        def check_telemetry_record(self, telemetry_record):
-            pass
-
-    class MultiValueAnomalyChecker(ABC):
-        def __init__(self):
-            pass
-
-        @abstractmethod
-        # checks a collection of telemetry records for an anomaly that happens over time
-        # Returns None for no anomaly, and a message if there is one
-        def check_telemetry_records(self, telemetry_records):
-            pass
-
-    class PowerAnomalyChecker(SingleValueAnomalyChecker):
-        def __init__(self):
-            super().__init__()
-
-        def check_telemetry_record(self, telemetry_record):
-            super().check_telemetry_record(telemetry_record)
-            if telemetry_record.power < float(0.0):
-                return f'* Anomaly - kW < 0.0 (kW = {telemetry_record.power})'
-            else:
-                return None
-
-    class VoltageAnomalyChecker(SingleValueAnomalyChecker):
-        def __init__(self):
-            super().__init__()
-
-        def check_telemetry_record(self, telemetry_record):
-            super().check_telemetry_record(telemetry_record)
-            if (telemetry_record.voltage >= 475) and (telemetry_record.voltage <= 485):
-                return None
-            else:
-                return f'* Anomaly - V outside range of 480 V +/- 5.0V (V={telemetry_record.voltage})'
-
-    class CurrentAnomalyChecker(SingleValueAnomalyChecker):
-        def __init__(self):
-            super().__init__()
-
-        def check_telemetry_record(self, telemetry_record):
-            super().check_telemetry_record(telemetry_record)
-            if telemetry_record.current < 0.0:
-                return f'* Anomaly - I < 0.0 (I = {telemetry_record.current})'
-            else:
-                return None
-
-    class TimeGapAnomalyChecker(MultiValueAnomalyChecker):
-        def __init__(self):
-            super().__init__()
-
-        def check_telemetry_records(self, telemetry_records):
-            super().check_telemetry_records(telemetry_records)
-
-            # Can't have a time gap if there aren't at least two records
-            if len(telemetry_records) < 2:
-                return None
-
-            for a,b in zip(telemetry_records, telemetry_records[1:]):
-                delta = a.timestamp - b.timestamp
-
-                if delta > datetime.timedelta(seconds=1, microseconds = 500000):
-                    return f'* Anomaly - time gap detected > 1.5 s ({delta.seconds + delta.microseconds/1e6} s)'
-
-            return None
 
     def __init__(self, get_function, put_function):
         super().__init__(get_function, put_function)
@@ -83,9 +13,9 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         self.MVA_WINDOW_SECONDS = 5
         self.history = list()  # 0th element is the most recent
 
-        self.single_value_anomaly_checkers = [PowerlineDataProcessor.PowerAnomalyChecker(),
-                                              PowerlineDataProcessor.VoltageAnomalyChecker(),
-                                              PowerlineDataProcessor.CurrentAnomalyChecker()]
+        self.single_value_anomaly_checkers = [PowerAnomalyChecker(),
+                                              VoltageAnomalyChecker(),
+                                              CurrentAnomalyChecker()]
 
 
     # keeps the self.history buffer full of at most MVA_WINDOW_SECONDS of data
@@ -141,7 +71,7 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
 
         # check for a time gap in the two most recent measurements so that
         # the anomoly can be logged
-        time_gap_checker = PowerlineDataProcessor.TimeGapAnomalyChecker()
+        time_gap_checker = TimeGapAnomalyChecker()
         time_gap_anomaly = time_gap_checker.check_telemetry_records(self.history[:2])
         if time_gap_anomaly is not None:
             anomalies.append(time_gap_anomaly)
