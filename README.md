@@ -41,6 +41,15 @@ It was initially assumed that data would not arrive out of order, but there was 
 
 That's it!  No libraries that don't come with stock Python 3.6 are needed.
 
+If it is desired to run the coverage test below, then the following PyPI packages are needed:
+* nosetests
+* coverage
+```
+pip install nose
+pip install coverage
+```
+
+
 # Running
 
 An input data file inputdata.dat is provided.  This was originally named telemetry[1].dat but was renamed since square brackets can be tricky to deal with in a command shell.
@@ -59,6 +68,14 @@ python -m unittest discover pyPowerLine/test
 ```
 
 100% code coverage was not obtained for this short exercise or attempted, but Test-Driven-Development was used to help refine the design after initial whiteboarding.
+
+A coverage test could be run, using nose if available, via:
+```
+nosetests pyPowerLine --with-coverage
+```
+
+The coverage result by the end of the exercise was 66%:
+![Coverage](doc/Coverage.png)
 
 # Design
 
