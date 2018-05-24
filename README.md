@@ -174,3 +174,4 @@ If I were to do this exercise again, I would:
 - Make the **SingleValueAnomalyChecker** and **MultiValueAnomalyChecker** abstract base classes both themselves descend from another abstract base class, **AnomalyChecker**, and refactor somewhat how anomaly messages are generated in order to simplify the client code.
 
 - It would be resiliant to out-of-order data, inserting it in the correct place in the moving average filter buffer when it does arrive. 
+- The moving average filter is over 5 seconds, but the time stamps aren't synchronous with 5 seconds so we might not really be exactly averaging over 5 seconds.  If this is important, the data could be interpolated to fit a 1 Hz sample rate.
