@@ -166,8 +166,4 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         else:
             transformed_telemetry_line = f'{telemetry_line}, , ,'
 
-        print()
-        for record in self.history:
-            print(record.timestamp)
-
         return f'{transformed_telemetry_line}', anomalies

@@ -16,7 +16,7 @@ class TestPowerlineDataProcessor(unittest.TestCase):
         # makes sure that we don't keep values around that aren't
         # needed for MVA calculation anymore, to save memory
         #
-        # inserts 7 records, but only 5 should be retained
+        # inserts 7 records, but only 6 should be retained
 
         processor = PowerlineDataProcessor(self.null_read_callback, self.null_write_callback)
 
@@ -28,7 +28,7 @@ class TestPowerlineDataProcessor(unittest.TestCase):
         processor.append_history( TelemetryRecord('2018-01-08 14:55:45.152, 4, 5, 6'))
         processor.append_history( TelemetryRecord('2018-01-08 14:55:46.152, 4, 5, 6'))
 
-        expected = 5
+        expected = 6
         actual = len(processor.history)
 
         self.assertEqual(expected, actual)
