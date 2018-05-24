@@ -4,8 +4,8 @@ from datetime import timedelta
 
 from pyPowerLine.Anomaly import *
 
-class PowerlineDataProcessor(DataProcessor.DataProcessor):
 
+class PowerlineDataProcessor(DataProcessor.DataProcessor):
 
     def __init__(self, get_function, put_function):
         super().__init__(get_function, put_function)
@@ -17,11 +17,10 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
                                               VoltageAnomalyChecker(),
                                               CurrentAnomalyChecker()]
 
-
     # keeps the self.history buffer full of at most MVA_WINDOW_SECONDS of data
     def append_history(self, telemetry_record):
 
-        if len(self.history) == 0 :
+        if len(self.history) == 0:
             self.history.append(telemetry_record)
             return
 
@@ -37,7 +36,6 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         # Otherwise, let the oldest record get pushed out
         else:
             self.history = [telemetry_record] + self.history[:-1]
-
 
     def calc_mva(self):
         kW_avg, V_avg, I_avg = 0.0, 0.0, 0.0
@@ -76,6 +74,10 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         if time_gap_anomaly is not None:
             anomalies.append(time_gap_anomaly)
 
+        out_of_order_checker = OutOfOrderAnomalyChecker()
+        out_of_order_anomaly = out_of_order_checker.check_telemetry_records(self.history[:2])
+        if out_of_order_anomaly is not None:
+            anomalies.append(out_of_order_anomaly)
 
         # check for a time gap in the moving average time (i.e. what is in self.history)
         # so that no averaging can be output
@@ -90,9 +92,8 @@ class PowerlineDataProcessor(DataProcessor.DataProcessor):
         if delta.seconds < 5:
             output_mva = False
 
-
         if output_mva is True:
-            transformed_telemetry_line = f'{telemetry_line}, {kW_avg}, {V_avg}, {I_avg}'
+            transformed_telemetry_line = f'{telemetry_line}, {kW_avg:.3f}, {V_avg:.3f}, {I_avg:.3f}'
         else:
             transformed_telemetry_line = f'{telemetry_line}, , ,'
 
