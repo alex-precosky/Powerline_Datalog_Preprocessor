@@ -126,12 +126,18 @@ Here are the anomaly checkers that were implemented:
 - Timestamped telemetry is always in chronological order. I.e. whatever transport brings in the data is assumed to serve to guarantee in-order delivery
 - Input data is properly formed. I.e. it will never fail to be parsed correctly according to its schema
 
-Individual classes will be unit tested to assume their correct output.  
+## Unit Testing
 
-Object mocking will be used with the DataProcessor class to ensure it calls the correct methods that have been injected into it.
+Individual classes will be unit tested to assure their correct output, such as:
+* Reading of lines correctly from a file by **DatalogFileLoader**
+* Writing of lines to a file by **DatalogFileWriter**
+* Parsing of telemetry into a **TelemetryRecord** object by **PowerlineDataProcessor**
 
-## PowerlineDataProcessor
+Object mocking will be used with the **DataProcessor** class to ensure it calls the correct methods that have been injected into it.
 
-The PowerlineDataProcessor will use object mocking to make sure it calls an input function and an output function.
+## Integration Testing
 
-Parsing will be tested with unittests
+A file with hand-calculated outputs should be passed through the program to verify correctness.
+
+## Acceptance
+The unit tests and integration test must all pass.
